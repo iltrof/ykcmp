@@ -2,8 +2,39 @@
 #include "util.h"
 
 namespace yk {
-    std::vector<char> compress(const std::vector<char>& data, const std::string& src) {
-        return {};
+    std::vector<char> compress(const std::vector<char>& data, const std::string& format, bool naive) {
+        if(naive) {
+            unsigned int chunks = data.size() / 0x7F;
+            unsigned int rest = data.size() % 0x7F;
+
+            size_t zsize = chunks * 0x80;
+            if(rest != 0) zsize += rest + 1;
+
+            std::vector<char> result = { 'Y','K','C','M','P','_','V','1','\x04','\0','\0','\0' };
+            result.resize(zsize + 0x14);
+            if(format == "v1") {
+                writeU32(result, 0x0C, zsize + 0x14);
+            } else if(format == "v1alt") {
+                writeU32(result, 0x0C, zsize);
+            }
+            writeU32(result, 0x10, data.size());
+
+            auto dIter = data.begin();
+            auto rIter = result.begin() + 0x14;
+            for(int i = 0; i < chunks; i++) {
+                *(rIter++) = 0x7F;
+                std::copy(dIter, dIter + 0x7F, rIter);
+                dIter += 0x7F; rIter += 0x7F;
+            }
+            if(rest != 0) {
+                *(rIter++) = rest;
+                std::copy(dIter, dIter + rest, rIter);
+            }
+
+            return result;
+        } else {
+            return {};
+        }
     }
 
     std::vector<char> decompress(const std::vector<char>& data) {

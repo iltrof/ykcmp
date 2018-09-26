@@ -20,7 +20,8 @@ int main(int argc, char** argv) {
     options.add_options("Decompression")
         ("a,at", "Offset of the archive inside the file", cxxopts::value<size_t>()->default_value("0"), "N");
     options.add_options("Compression")
-        ("f,format-version", "Archive format version. Supported: v1, v1alt", cxxopts::value<std::string>()->default_value("v1"), "VER"); 
+        ("f,format-version", "Archive format version. Supported: v1, v1alt", cxxopts::value<std::string>()->default_value("v1"), "VER")
+        ("naive", "Use naive \"compression\" (does not compress anything, but produces valid YKCMP archives; really fast)");
 
     auto opts = options.parse(argc, argv);
 
@@ -40,8 +41,8 @@ int main(int argc, char** argv) {
         outputName = opts["output"].as<std::string>();
     }
 
-    std::ifstream infile(opts["input"].as<std::string>(), std::ios::binary);
     if(!compressMode) {
+        std::ifstream infile(opts["input"].as<std::string>(), std::ios::binary);
         infile.ignore(opts["at"].as<size_t>());
 
         auto startPos = infile.tellg();
@@ -64,6 +65,26 @@ int main(int argc, char** argv) {
         infile.close();
 
         std::vector<char> output = yk::decompress(input);
+        std::ofstream outfile(outputName, std::ios::binary);
+        outfile.write(&output[0], output.size());
+    } else {
+        std::string format = opts["format-version"].as<std::string>();
+        if(format != "v1" && format != "v1alt") {
+            std::cout << "Unknown format version: " << format << "\nSupported are: v1, v1alt\n";
+            return 1;
+        }
+
+        std::ifstream infile(opts["input"].as<std::string>(), std::ios::binary | std::ios::ate);
+        size_t size = infile.tellg();
+        infile.seekg(0);
+
+        std::vector<char> input;
+        input.resize(size);
+        infile.read(&input[0], size);
+        input.resize(infile.gcount());
+        infile.close();
+
+        std::vector<char> output = yk::compress(input, opts["format-version"].as<std::string>(), opts.count("naive") != 0);
         std::ofstream outfile(outputName, std::ios::binary);
         outfile.write(&output[0], output.size());
     }
