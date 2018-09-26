@@ -115,6 +115,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="util.cpp" />
+    <ClCompile Include="ykcmp.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cxxopts.hpp" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="ykcmp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
