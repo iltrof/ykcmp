@@ -2,7 +2,7 @@
 #include "util.h"
 
 namespace yk {
-    std::vector<char> compress(const std::vector<char>& data, const std::string& format, bool naive) {
+    std::vector<char> compress(const std::vector<char>& data, bool naive) {
         if(naive) {
             unsigned int chunks = data.size() / 0x7F;
             unsigned int rest = data.size() % 0x7F;
@@ -12,11 +12,7 @@ namespace yk {
 
             std::vector<char> result = { 'Y','K','C','M','P','_','V','1','\x04','\0','\0','\0' };
             result.resize(zsize + 0x14);
-            if(format == "v1") {
-                writeU32(result, 0x0C, zsize + 0x14);
-            } else if(format == "v1alt") {
-                writeU32(result, 0x0C, zsize);
-            }
+            writeU32(result, 0x0C, zsize + 0x14);
             writeU32(result, 0x10, data.size());
 
             auto dIter = data.begin();
