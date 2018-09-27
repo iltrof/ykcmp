@@ -128,8 +128,8 @@ namespace yk {
             }
 
             size_t zsize = rIter - result.begin();
-            result.resize(zsize + 0x14);
-            writeU32(result, 0x0C, zsize + 0x14);
+            result.resize(zsize);
+            writeU32(result, 0x0C, zsize);
         }
 
         return result;
