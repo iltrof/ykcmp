@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    std::string outputName;
+    std::string outputName, inputName;
     if(opts.count("output") == 0) {
         if(compressMode) {
             outputName = opts["input"].as<std::string>() + ".yk";
@@ -39,9 +39,10 @@ int main(int argc, char** argv) {
     } else {
         outputName = opts["output"].as<std::string>();
     }
+    inputName = opts["input"].as<std::string>();
 
     if(!compressMode) {
-        std::ifstream infile(opts["input"].as<std::string>(), std::ios::binary);
+        std::ifstream infile(inputName, std::ios::binary);
         infile.ignore(opts["at"].as<size_t>());
 
         auto startPos = infile.tellg();
@@ -63,11 +64,14 @@ int main(int argc, char** argv) {
         input.resize(infile.gcount());
         infile.close();
 
+        std::cout << "Extracting " << inputName << "...\n";
+        std::cout << ".........|.........|.........|.........|.........|.........|.........|.........|.........|.........|\n";
         std::vector<char> output = yk::decompress(input);
         std::ofstream outfile(outputName, std::ios::binary);
         outfile.write(&output[0], output.size());
+        std::cout << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
     } else {
-        std::ifstream infile(opts["input"].as<std::string>(), std::ios::binary | std::ios::ate);
+        std::ifstream infile(inputName, std::ios::binary | std::ios::ate);
         size_t size = infile.tellg();
         infile.seekg(0);
 
@@ -77,9 +81,13 @@ int main(int argc, char** argv) {
         input.resize(infile.gcount());
         infile.close();
 
+        std::cout << "Compressing " << inputName << "...\n";
+        std::cout << ".........|.........|.........|.........|.........|.........|.........|.........|.........|.........|\n";
         std::vector<char> output = yk::compress(input, opts.count("naive") != 0);
         std::ofstream outfile(outputName, std::ios::binary);
         outfile.write(&output[0], output.size());
+        std::cout << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
+        std::cout << "(" << static_cast<float>(output.size()) / input.size() * 100.f << "% of original file)\n";
     }
 
     return 0;

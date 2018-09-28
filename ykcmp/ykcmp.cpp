@@ -1,6 +1,8 @@
 #include "ykcmp.h"
 #include "util.h"
 
+#include <iostream>
+
 namespace yk {
     std::vector<char> compress(const std::vector<char>& data, bool naive) {
         unsigned int chunks = data.size() / 0x7F;
@@ -12,6 +14,7 @@ namespace yk {
         result.resize(maxZSize + 0x14);
         writeU32(result, 0x10, data.size());
 
+        unsigned int percentage = 0;
         if(naive) {
             auto dIter = data.begin();
             auto rIter = result.begin() + 0x14;
@@ -19,10 +22,18 @@ namespace yk {
                 *(rIter++) = 0x7F;
                 std::copy(dIter, dIter + 0x7F, rIter);
                 dIter += 0x7F; rIter += 0x7F;
+
+                unsigned int newPercentage = std::fmin(100.f, static_cast<float>(rIter - result.begin()) / maxZSize * 100.f);
+                for(; percentage < newPercentage; percentage++) {
+                    std::cout << '#';
+                }
             }
             if(rest != 0) {
                 *(rIter++) = rest;
                 std::copy(dIter, dIter + rest, rIter);
+            }
+            for (; percentage < 100; percentage++) {
+                std::cout << '#';
             }
 
             writeU32(result, 0x0C, maxZSize + 0x14);
@@ -32,6 +43,11 @@ namespace yk {
             auto copyHead = result.end();
 
             while(dIter < data.end()) {
+                unsigned int newPercentage = std::fmin(100.f, static_cast<float>(dIter - data.begin()) / data.size() * 100.f);
+                for (; percentage < newPercentage; percentage++) {
+                    std::cout << '#';
+                }
+
                 int maxOffset = 0x1000;
                 const int maxSz[] = { 0x3, 0x1F, 0x1FF };
                 int sz = 0, offset = 0, saved = 0;
@@ -99,12 +115,16 @@ namespace yk {
 
                 dIter += sz;
             }
+            for (; percentage < 100; percentage++) {
+                std::cout << '#';
+            }
 
             size_t zsize = rIter - result.begin();
             result.resize(zsize);
             writeU32(result, 0x0C, zsize);
         }
 
+        std::cout << '\n';
         return result;
     }
 
@@ -115,6 +135,7 @@ namespace yk {
 
         auto rIter = result.begin();
         auto dIter = data.begin() + 0x14;
+        unsigned int percentage = 0;
         for(; dIter < data.end() && rIter < result.end(); ) {
             unsigned char tmp = *(dIter++);
 
@@ -139,8 +160,14 @@ namespace yk {
                 std::copy(rIter - offset, rIter - offset + sz, rIter);
                 rIter += sz;
             }
+
+            unsigned int newPercentage = std::fmin(100.f, static_cast<float>(rIter - result.begin()) / finalSize * 100.f);
+            for (; percentage < newPercentage; percentage++) {
+                std::cout << '#';
+            }
         }
 
+        std::cout << '\n';
         return result;
     }
 }
