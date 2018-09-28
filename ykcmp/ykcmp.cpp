@@ -40,7 +40,7 @@ namespace yk {
                         if (start < data.begin()) {
                             start = data.begin();
                         }
-                        if (*start != *dIter || *(start + 1) != *(dIter + 1) || *(start + saved) != *(dIter + saved)) {
+                        if (*start != *dIter) {
                             continue;
                         }
 
