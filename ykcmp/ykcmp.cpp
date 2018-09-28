@@ -32,62 +32,35 @@ namespace yk {
             auto copyHead = result.end();
 
             while(dIter < data.end()) {
+                int maxOffset = 0x1000;
+                const int maxSz[] = { 0x3, 0x1F, 0x1FF };
                 int sz = 0, offset = 0, saved = 0;
-                for(auto i = dIter - 0x1000; i < dIter; i++) {
-                    if(i < data.begin()) {
-                        i = data.begin();
-                    }
+                for (int i = 3; i > 0; i--) {
+                    for (auto start = dIter - maxOffset; start < dIter - saved - i; start++) {
+                        if (start < data.begin()) {
+                            start = data.begin();
+                        }
+                        if (*start != *dIter || *(start + 1) != *(dIter + 1) || *(start + saved) != *(dIter + saved)) {
+                            continue;
+                        }
 
-                    int s = -3;
-                    auto leftIter = i, rightIter = dIter;
-                    while(rightIter < data.end() && *leftIter == *rightIter && leftIter < dIter && s < 0x1FF) {
-                        leftIter++;
-                        rightIter++;
-                        s++;
-                    }
+                        int s = -i;
+                        auto leftIter = start, rightIter = dIter;
+                        while (rightIter < data.end() && *leftIter == *rightIter && s < maxSz[i] && leftIter < dIter) {
+                            leftIter++;
+                            rightIter++;
+                            s++;
+                        }
 
-                    if(s > saved) {
-                        sz = s + 3;
-                        offset = dIter - i;
-                        saved = s;
+                        if (s > saved) {
+                            sz = s + i;
+                            offset = dIter - start;
+                            saved = s;
+                        }
                     }
-                }
-                for(auto i = dIter - 0x100; i < dIter; i++) {
-                    if(i < data.begin()) {
-                        i = data.begin();
-                    }
-
-                    int s = -2;
-                    auto leftIter = i, rightIter = dIter;
-                    while(rightIter < data.end() && *leftIter == *rightIter && leftIter < dIter && s < 0x1F) {
-                        leftIter++;
-                        rightIter++;
-                        s++;
-                    }
-
-                    if(s > saved) {
-                        sz = s + 2;
-                        offset = dIter - i;
-                        saved = s;
-                    }
-                }
-                for(auto i = dIter - 0x10; i < dIter; i++) {
-                    if(i < data.begin()) {
-                        i = data.begin();
-                    }
-
-                    int s = -1;
-                    auto leftIter = i, rightIter = dIter;
-                    while(rightIter < data.end() && *leftIter == *rightIter && leftIter < dIter && s < 0x3) {
-                        leftIter++;
-                        rightIter++;
-                        s++;
-                    }
-
-                    if(s > saved) {
-                        sz = s + 1;
-                        offset = dIter - i;
-                        saved = s;
+                    maxOffset /= 0x10;
+                    if (saved > maxOffset) {
+                        continue;
                     }
                 }
 
