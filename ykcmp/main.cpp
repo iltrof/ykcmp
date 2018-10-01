@@ -9,11 +9,12 @@ bool hasValidHeader(std::ifstream& file);
 size_t readArchiveSize(std::ifstream& file);
 std::vector<char> fileToVector(std::ifstream& file, size_t size);
 
-void compress(const std::string& inputName, const std::string& outputName, bool naive);
+void compress(const std::string& inputName, const std::string& outputName, int level);
 void decompress(const std::string& inputName, const std::string& outputName, size_t offset);
 
 int main(int argc, char** argv) {
     bool compressMode;
+    int compressionLevel;
 
     cxxopts::Options options("ykcmp", "(De)compressor for the YKCMP archive format");
     options.positional_help("INPUT [OUTPUT]");
@@ -22,16 +23,28 @@ int main(int argc, char** argv) {
         ("i,input", "Input file", cxxopts::value<std::string>(), "FILE")
         ("o,output", "Output file", cxxopts::value<std::string>(), "FILE")
         ("help", "Print help")
+        ("levels", "Print available compression levels")
         ("rest", "Positional arguments", cxxopts::value<std::vector<std::string>>());
     options.parse_positional({"input", "output", "rest"});
     options.add_options("Decompression")
         ("a,at", "Offset of the archive inside the file", cxxopts::value<size_t>()->default_value("0"), "N");
     options.add_options("Compression")
-        ("naive", "Use naive \"compression\" (does not compress anything, but produces valid YKCMP archives; really fast)");
+        ("l,level", "Level of compression (see --levels)", cxxopts::value<int>(compressionLevel)->default_value("1"), "N");
 
     auto opts = options.parse(argc, argv);
 
-    if(opts.count("help") != 0 || opts.count("input") == 0) {
+    if(opts.count("levels") != 0 || compressionLevel < 0 || compressionLevel > 2) {
+        if(compressionLevel < 0 || compressionLevel > 2) {
+            std::cout << "Invalid compression level\n\n";
+        }
+
+        std::cout << "Compression levels:\n"
+            "  0: No compression (just produces valid YKCMP archives; fastest)\n"
+            "  1: Decent (better than \"best\" for files with little repetition; moderately fast)\n"
+            "  2: Best (slow)\n\n"
+            "1 is recommended: it's way faster than 2, and the difference in size is negligible\n\n";
+        return 0;
+    } else if(opts.count("help") != 0 || opts.count("input") == 0) {
         std::cout << options.help({"", "Decompression", "Compression"}) << std::endl;
         return 0;
     }
@@ -45,7 +58,7 @@ int main(int argc, char** argv) {
     }
 
     if(compressMode) {
-        compress(inputName, outputName, opts.count("naive") != 0);
+        compress(inputName, outputName, compressionLevel);
     } else {
         decompress(inputName, outputName, opts["at"].as<size_t>());
     }
@@ -53,7 +66,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void compress(const std::string& inputName, const std::string& outputName, bool naive) {
+void compress(const std::string& inputName, const std::string& outputName, int level) {
     std::ifstream infile(inputName, std::ios::binary | std::ios::ate);
     size_t size = static_cast<size_t>(infile.tellg());
     infile.seekg(0);
@@ -63,7 +76,7 @@ void compress(const std::string& inputName, const std::string& outputName, bool 
     std::cout << "Compressing " << inputName << "...\n";
     std::cout << ".........|.........|.........|.........|.........|.........|.........|.........|.........|.........|\n";
 
-    std::vector<char> output = yk::compress(input, naive);
+    std::vector<char> output = yk::compress(input, level);
 
     std::ofstream outfile(outputName, std::ios::binary);
     outfile.write(&output[0], output.size());

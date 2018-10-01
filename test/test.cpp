@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+const int COMPRESSION_LEVELS = 3;
+
 const std::vector<std::string> testNames = {
     "copy", "onebyte", "twobyte", "threebyte"
 };
@@ -29,9 +31,9 @@ bool runDecompressionTest(const std::string& name) {
     return output == expected;
 }
 
-bool runCompressionTest(const std::string& name, bool naive) {
+bool runCompressionTest(const std::string& name, int level) {
     std::vector<char> input = fileToVector(std::string("tests/") + name + ".dec");
-    std::vector<char> compressed = yk::compress(input, naive);
+    std::vector<char> compressed = yk::compress(input, level);
     std::vector<char> decompressed = yk::decompress(compressed);
 
     return decompressed == input;
@@ -40,26 +42,15 @@ bool runCompressionTest(const std::string& name, bool naive) {
 int main() {
     for(auto& f : testNames) {
         bool success = runDecompressionTest(f);
-        if(success) {
-            std::cout << "  Passed decompression test \"" << f << "\"\n";
-        } else {
-            std::cout << "! Failed decompression test \"" << f << "\"\n";
-        }
+        std::cout << (success ? "  Passed " : "! Failed ")
+            << "decompression test \"" << f << "\"\n";
     }
+
     for(auto& f : testNames) {
-        bool success = runCompressionTest(f, true);
-        if(success) {
-            std::cout << "  Passed naive compression test \"" << f << "\"\n";
-        } else {
-            std::cout << "! Failed naive compression test \"" << f << "\"\n";
-        }
-    }
-    for(auto& f : testNames) {
-        bool success = runCompressionTest(f, false);
-        if(success) {
-            std::cout << "  Passed normal compression test \"" << f << "\"\n";
-        } else {
-            std::cout << "! Failed normal compression test \"" << f << "\"\n";
+        for(int level = 0; level < COMPRESSION_LEVELS; level++) {
+            bool success = runCompressionTest(f, level);
+            std::cout << (success ? "  Passed " : "! Failed ")
+                << "compression test \"" << f << "\" at level " << level << "\n";
         }
     }
 

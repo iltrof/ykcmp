@@ -36,7 +36,7 @@ namespace yk {
             result.resize(rIter - result.begin());
         }
 
-        void normalCompress(const std::vector<char>& data, std::vector<char>& result) {
+        void normalCompress(const std::vector<char>& data, std::vector<char>& result, int level) {
             unsigned int percentage = 0;
 
             auto dIter = data.begin();
@@ -47,11 +47,14 @@ namespace yk {
                 countPercents(percentage, dIter - data.begin(), data.size());
 
                 const int maxSz[] = { 0x3, 0x1F, 0x1FF };
-                int maxOffset = 0x1000;
+                int maxOffset[] = { 0x10, 0x100, 0x202 };
+                if(level == 2) {
+                    maxOffset[2] = 0x1000;
+                }
 
                 int sz = 0, offset = 0, saved = 0;
                 for (int i = 3; i > 0; i--) {
-                    for (auto start = dIter - maxOffset; start < dIter - saved - i; start++) {
+                    for (auto start = dIter - maxOffset[i - 1]; start < dIter - saved - i; start++) {
                         if (start < data.begin()) {
                             start = data.begin();
                         }
@@ -72,10 +75,6 @@ namespace yk {
                             offset = dIter - start;
                             saved = s;
                         }
-                    }
-                    maxOffset /= 0x10;
-                    if (saved > maxOffset) {
-                        continue;
                     }
                 }
 
@@ -112,7 +111,7 @@ namespace yk {
         }
     }
 
-    std::vector<char> compress(const std::vector<char>& data, bool naive) {
+    std::vector<char> compress(const std::vector<char>& data, int level) {
         unsigned int chunks = data.size() / 0x7F;
         unsigned int rest = data.size() % 0x7F;
 
@@ -122,10 +121,10 @@ namespace yk {
         result.resize(maxZSize + 0x14);
         writeU32(result, 0x10, data.size());
 
-        if(naive) {
+        if(level == 0) {
             naiveCompress(data, result, chunks, rest);
         } else {
-            normalCompress(data, result);
+            normalCompress(data, result, level);
         }
 
         writeU32(result, 0x0C, result.size());
