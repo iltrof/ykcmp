@@ -62,7 +62,7 @@ namespace yk {
 
                         int s = -i;
                         auto leftIter = start, rightIter = dIter;
-                        while (rightIter < data.end() && *leftIter == *rightIter && s < maxSz[i] && leftIter < dIter) {
+                        while (rightIter < data.end() && *leftIter == *rightIter && s < maxSz[i - 1] && leftIter < dIter) {
                             leftIter++;
                             rightIter++;
                             s++;
