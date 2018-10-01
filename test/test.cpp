@@ -40,14 +40,14 @@ bool runCompressionTest(const std::string& name, int level) {
 }
 
 int main() {
-    for(auto& f : testNames) {
+    for (auto& f : testNames) {
         bool success = runDecompressionTest(f);
         std::cout << (success ? "  Passed " : "! Failed ")
             << "decompression test \"" << f << "\"\n";
     }
 
-    for(auto& f : testNames) {
-        for(int level = 0; level < COMPRESSION_LEVELS; level++) {
+    for (auto& f : testNames) {
+        for (int level = 0; level < COMPRESSION_LEVELS; level++) {
             bool success = runCompressionTest(f, level);
             std::cout << (success ? "  Passed " : "! Failed ")
                 << "compression test \"" << f << "\" at level " << level << "\n";

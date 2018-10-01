@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
 
     auto opts = options.parse(argc, argv);
 
-    if(opts.count("levels") != 0 || compressionLevel < 0 || compressionLevel > 2) {
-        if(compressionLevel < 0 || compressionLevel > 2) {
+    if (opts.count("levels") != 0 || compressionLevel < 0 || compressionLevel > 2) {
+        if (compressionLevel < 0 || compressionLevel > 2) {
             std::cout << "Invalid compression level\n\n";
         }
 
@@ -44,20 +44,20 @@ int main(int argc, char** argv) {
             "  2: Best (slow)\n\n"
             "1 is recommended: it's way faster than 2, and the difference in size is negligible\n\n";
         return 0;
-    } else if(opts.count("help") != 0 || opts.count("input") == 0) {
+    } else if (opts.count("help") != 0 || opts.count("input") == 0) {
         std::cout << options.help({"", "Decompression", "Compression"}) << std::endl;
         return 0;
     }
 
     std::string outputName, inputName;
     inputName = opts["input"].as<std::string>();
-    if(opts.count("output") == 0) {
+    if (opts.count("output") == 0) {
         outputName = inputName + (compressMode ? ".ykcmp" : ".dec");
     } else {
         outputName = opts["output"].as<std::string>();
     }
 
-    if(compressMode) {
+    if (compressMode) {
         compress(inputName, outputName, compressionLevel);
     } else {
         decompress(inputName, outputName, opts["at"].as<size_t>());
@@ -89,7 +89,7 @@ void decompress(const std::string& inputName, const std::string& outputName, siz
     std::ifstream infile(inputName, std::ios::binary);
     infile.ignore(offset);
 
-    if(!hasValidHeader(infile)) {
+    if (!hasValidHeader(infile)) {
         std::cout << "Invalid archive format!\n"
             "Expected to see \"YKCMP_V1\" in the beginning of the file\n";
         return;
