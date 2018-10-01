@@ -12,7 +12,7 @@ const std::vector<std::string> testNames = {
 
 std::vector<char> fileToVector(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
-    size_t size = file.tellg();
+    size_t size = static_cast<size_t>(file.tellg());
     file.seekg(0);
 
     std::vector<char> result;
