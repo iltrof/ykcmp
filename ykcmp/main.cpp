@@ -2,8 +2,8 @@
 #include "util.h"
 #include "ykcmp.h"
 
-#include <fstream>
 #include <iostream>
+#include <fstream>
 
 bool hasValidHeader(std::ifstream& file);
 size_t readArchiveSize(std::ifstream& file);
@@ -13,28 +13,36 @@ void compress(const std::string& inputName, const std::string& outputName, int l
 void decompress(const std::string& inputName, const std::string& outputName, size_t offset);
 
 int main(int argc, char** argv) {
-    bool compressMode;
+    std::string inputName;
+    std::string outputName;
+
+    bool quiet = false;
+    bool showHelp = false;
+    bool showLevels = false;
+
+    bool compressMode = false;
     int compressionLevel;
+    size_t archiveOffset;
 
     cxxopts::Options options("ykcmp", "(De)compressor for the YKCMP archive format");
     options.positional_help("INPUT [OUTPUT]");
     options.add_options()
-        ("c,compress", "Compress instead of decompressing", cxxopts::value<bool>(compressMode)->default_value("false"))
-        ("i,input", "Input file", cxxopts::value<std::string>(), "FILE")
-        ("o,output", "Output file", cxxopts::value<std::string>(), "FILE")
-        ("q,quiet", "Do not write anything to console", cxxopts::value<bool>()->default_value("false"))
-        ("help", "Print help")
-        ("levels", "Print available compression levels")
-        ("rest", "Positional arguments", cxxopts::value<std::vector<std::string>>());
-    options.parse_positional({"input", "output", "rest"});
+        ("c,compress", "Compress instead of decompressing",     cxxopts::value<bool>       (compressMode))
+        ("i,input",    "Input file",                            cxxopts::value<std::string>(inputName   ), "FILE")
+        ("o,output",   "Output file",                           cxxopts::value<std::string>(outputName  ), "FILE")
+        ("q,quiet",    "Do not write anything to console",      cxxopts::value<bool>       (quiet       ))
+        ("help",       "Print help",                            cxxopts::value<bool>       (showHelp    ))
+        ("levels",     "Print available compression levels",    cxxopts::value<bool>       (showLevels  ))
+        ("rest",       "Positional arguments",                  cxxopts::value<std::vector<std::string>>());
     options.add_options("Decompression")
-        ("a,at", "Offset of the archive inside the file", cxxopts::value<size_t>()->default_value("0"), "N");
+        ("a,at",       "Offset of the archive inside the file", cxxopts::value<size_t>(archiveOffset)->default_value("0"), "N");
     options.add_options("Compression")
-        ("l,level", "Level of compression (see --levels)", cxxopts::value<int>(compressionLevel)->default_value("1"), "N");
+        ("l,level",    "Level of compression (see --levels)",   cxxopts::value<int>(compressionLevel)->default_value("1"), "N");
+    options.parse_positional({"input", "output", "rest"});
 
     auto opts = options.parse(argc, argv);
 
-    if (opts.count("levels") != 0 || compressionLevel < 0 || compressionLevel > 2) {
+    if (showLevels || compressionLevel < 0 || compressionLevel > 2) {
         if (compressionLevel < 0 || compressionLevel > 2) {
             std::cout << "Invalid compression level\n\n";
         }
@@ -45,27 +53,23 @@ int main(int argc, char** argv) {
             "  2: Best (slow)\n\n"
             "1 is recommended: it's way faster than 2, and the difference in size is negligible\n\n";
         return 0;
-    } else if (opts.count("help") != 0 || opts.count("input") == 0) {
+    } else if (showHelp || inputName == "") {
         std::cout << options.help({"", "Decompression", "Compression"}) << std::endl;
         return 0;
     }
 
-    if (opts.count("quiet") != 0) {
+    if (quiet) {
         setLogging(false);
     }
 
-    std::string outputName, inputName;
-    inputName = opts["input"].as<std::string>();
-    if (opts.count("output") == 0) {
+    if (outputName == "") {
         outputName = inputName + (compressMode ? ".ykcmp" : ".dec");
-    } else {
-        outputName = opts["output"].as<std::string>();
     }
 
     if (compressMode) {
         compress(inputName, outputName, compressionLevel);
     } else {
-        decompress(inputName, outputName, opts["at"].as<size_t>());
+        decompress(inputName, outputName, archiveOffset);
     }
 
     return 0;
@@ -73,6 +77,11 @@ int main(int argc, char** argv) {
 
 void compress(const std::string& inputName, const std::string& outputName, int level) {
     std::ifstream infile(inputName, std::ios::binary | std::ios::ate);
+    if(infile.fail()) {
+        std::cout << "Could not open input file: " << inputName << "\n";
+        return;
+    }
+
     size_t size = static_cast<size_t>(infile.tellg());
     infile.seekg(0);
 
@@ -84,19 +93,27 @@ void compress(const std::string& inputName, const std::string& outputName, int l
     std::vector<char> output = yk::compress(input, level);
 
     std::ofstream outfile(outputName, std::ios::binary);
+    if(outfile.fail()) {
+        std::cout << "Could not open output file: " << outputName << "\n";
+        return;
+    }
     outfile.write(&output[0], output.size());
 
     log() << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
-    log() << "(" << static_cast<float>(output.size()) / input.size() * 100.f << "% of original file)\n";
+    log() << "(" << static_cast<float>(output.size()) / input.size() * 100.f << "% of original file)\n\n";
 }
 
 void decompress(const std::string& inputName, const std::string& outputName, size_t offset) {
     std::ifstream infile(inputName, std::ios::binary);
+    if(infile.fail()) {
+        std::cout << "Could not open file: " << inputName << "\n";
+        return;
+    }
     infile.ignore(offset);
 
     if (!hasValidHeader(infile)) {
         std::cout << "Invalid archive format!\n"
-            "Expected to see \"YKCMP_V1\" in the beginning of the file\n";
+            "Expected to see \"YKCMP_V1\" at the start of the file/given offset\n";
         return;
     }
 
@@ -108,9 +125,13 @@ void decompress(const std::string& inputName, const std::string& outputName, siz
     std::vector<char> output = yk::decompress(input);
 
     std::ofstream outfile(outputName, std::ios::binary);
+    if(outfile.fail()) {
+        std::cout << "Could not open output file: " << outputName << "\n";
+        return;
+    }
     outfile.write(&output[0], output.size());
 
-    log() << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
+    log() << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n\n";
 }
 
 bool hasValidHeader(std::ifstream& file) {

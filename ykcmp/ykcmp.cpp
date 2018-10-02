@@ -1,8 +1,6 @@
 #include "ykcmp.h"
 #include "util.h"
 
-#include <iostream>
-
 namespace yk {
     namespace {
         void countPercents(unsigned int& percentage, unsigned int part, unsigned int whole) {
