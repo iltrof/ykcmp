@@ -1,5 +1,13 @@
 #include "util.h"
 
+#include <sstream>
+#include <string>
+
+namespace {
+    bool logging = true;
+    std::ostringstream blackHole;
+}
+
 unsigned int readU32(const std::vector<char>& vec, size_t at) {
     return (static_cast<unsigned char>(vec[at]))
          + (static_cast<unsigned char>(vec[at + 1]) << 8)
@@ -12,4 +20,12 @@ void writeU32(std::vector<char>& vec, size_t at, unsigned int value) {
     vec[at + 1] = static_cast<char>((value & 0x0000FF00) >> 8);
     vec[at + 2] = static_cast<char>((value & 0x00FF0000) >> 16);
     vec[at + 3] = static_cast<char>((value & 0xFF000000) >> 24);
+}
+
+void setLogging(bool val) {
+    logging = val;
+}
+
+std::ostream& log() {
+    return logging ? std::cout : blackHole;
 }

@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
         ("c,compress", "Compress instead of decompressing", cxxopts::value<bool>(compressMode)->default_value("false"))
         ("i,input", "Input file", cxxopts::value<std::string>(), "FILE")
         ("o,output", "Output file", cxxopts::value<std::string>(), "FILE")
+        ("q,quiet", "Do not write anything to console", cxxopts::value<bool>()->default_value("false"))
         ("help", "Print help")
         ("levels", "Print available compression levels")
         ("rest", "Positional arguments", cxxopts::value<std::vector<std::string>>());
@@ -49,6 +50,10 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    if (opts.count("quiet") != 0) {
+        setLogging(false);
+    }
+
     std::string outputName, inputName;
     inputName = opts["input"].as<std::string>();
     if (opts.count("output") == 0) {
@@ -73,16 +78,16 @@ void compress(const std::string& inputName, const std::string& outputName, int l
 
     std::vector<char> input = fileToVector(infile, size);
 
-    std::cout << "Compressing " << inputName << "...\n";
-    std::cout << ".........|.........|.........|.........|.........|.........|.........|.........|.........|.........|\n";
+    log() << "Compressing " + inputName + "...\n";
+    log() << ".........|.........|.........|.........|.........|.........|.........|.........|.........|.........|\n";
 
     std::vector<char> output = yk::compress(input, level);
 
     std::ofstream outfile(outputName, std::ios::binary);
     outfile.write(&output[0], output.size());
 
-    std::cout << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
-    std::cout << "(" << static_cast<float>(output.size()) / input.size() * 100.f << "% of original file)\n";
+    log() << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
+    log() << "(" << static_cast<float>(output.size()) / input.size() * 100.f << "% of original file)\n";
 }
 
 void decompress(const std::string& inputName, const std::string& outputName, size_t offset) {
@@ -97,15 +102,15 @@ void decompress(const std::string& inputName, const std::string& outputName, siz
 
     std::vector<char> input = fileToVector(infile, readArchiveSize(infile));
 
-    std::cout << "Extracting " << inputName << "...\n";
-    std::cout << ".........|.........|.........|.........|.........|.........|.........|.........|.........|.........|\n";
+    log() << "Extracting " << inputName << "...\n";
+    log() << ".........|.........|.........|.........|.........|.........|.........|.........|.........|.........|\n";
 
     std::vector<char> output = yk::decompress(input);
 
     std::ofstream outfile(outputName, std::ios::binary);
     outfile.write(&output[0], output.size());
 
-    std::cout << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
+    log() << "Written 0x" << std::hex << output.size() << std::dec << " (" << output.size() << ") bytes to " << outputName << "\n";
 }
 
 bool hasValidHeader(std::ifstream& file) {

@@ -40,6 +40,8 @@ bool runCompressionTest(const std::string& name, int level) {
 }
 
 int main() {
+    setLogging(false);
+
     for (auto& f : testNames) {
         bool success = runDecompressionTest(f);
         std::cout << (success ? "  Passed " : "! Failed ")

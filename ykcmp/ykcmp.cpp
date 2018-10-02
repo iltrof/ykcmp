@@ -11,7 +11,7 @@ namespace yk {
                 newPerc = 100;
             }
             for (; percentage < newPerc; percentage++) {
-                std::cout << "#";
+                log() << "#";
             }
         }
 
@@ -128,7 +128,7 @@ namespace yk {
         }
 
         writeU32(result, 0x0C, result.size());
-        std::cout << '\n';
+        log() << '\n';
         return result;
     }
 
@@ -170,7 +170,7 @@ namespace yk {
 
         countPercents(percentage, 100, 100);
         result.resize(rIter - result.begin());
-        std::cout << '\n';
+        log() << '\n';
         return result;
     }
 }
